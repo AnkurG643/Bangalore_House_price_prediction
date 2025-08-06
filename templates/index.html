@@ -22,7 +22,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <title>House price predictor</title>
+    <title>Rooflyzer – House Price Predictor</title>
+
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
 
     <style>
       :root {
@@ -147,29 +149,157 @@
         background: white;
       }
 
-      select.form-control {
-        cursor: pointer;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-        background-position: right 0.75rem center;
-        background-repeat: no-repeat;
-        background-size: 1.5em 1.5em;
-        padding-right: 2.5rem;
-        appearance: none;
-        color: #333333 !important;
-        background-color: var(--light-gray) !important;
-        padding-top: 0px;
-    padding-bottom: 0px;
+      /* Search Select Styles */
+      .search-select-container {
+        position: relative;
       }
 
-      select.form-control:focus {
-        background-color: white !important;
-        color: #333333 !important;
+      .search-input {
+        cursor: text;
+        padding-right: 3rem;
       }
 
-      select.form-control option {
-        color: #333333;
+      .dropdown-arrow {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        pointer-events: none;
+        z-index: 5;
+      }
+
+      .dropdown-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
         background: white;
-        padding: 0.5rem;
+        border: 2px solid var(--border-color);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .dropdown-list.show {
+        display: block;
+      }
+
+      .dropdown-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border-bottom: 1px solid #f1f1f1;
+      }
+
+      .dropdown-item:hover {
+        background-color: var(--light-gray);
+      }
+
+      .dropdown-item.highlighted {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .dropdown-item.hidden {
+        display: none;
+      }
+
+      .dropdown-item:last-child {
+        border-bottom: none;
+        border-radius: 0 0 10px 10px;
+      }
+
+      .search-input:focus + .dropdown-arrow {
+        color: var(--primary-color);
+      }
+
+      /* Custom Alert Styles */
+      .custom-alert {
+        margin-bottom: 2rem;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        animation: slideInDown 0.3s ease-out;
+      }
+
+      .custom-alert-error {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border-left: 4px solid #ef4444;
+      }
+
+      .custom-alert-success {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border-left: 4px solid #10b981;
+      }
+
+      .alert-content {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        gap: 12px;
+      }
+
+      .alert-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+      }
+
+      .custom-alert-error .alert-icon {
+        color: #dc2626;
+      }
+
+      .custom-alert-success .alert-icon {
+        color: #059669;
+      }
+
+      .alert-message {
+        flex-grow: 1;
+        font-weight: 500;
+        color: #374151;
+        line-height: 1.5;
+      }
+
+      .alert-close {
+        background: none;
+        border: none;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+
+      .alert-close:hover {
+        background: rgba(0, 0, 0, 0.1);
+        color: #374151;
+      }
+
+      @keyframes slideInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Form validation error states */
+      .form-control.error {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+      }
+
+      .form-control.success {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
       }
 
       .predict-btn {
@@ -326,8 +456,9 @@
           <div class="card-header">
             <h1>
               <i class="fas fa-home header-icon"></i>
-              House Price Predictor
+              Welcome to Rooflyzer
             </h1>
+            <p style="text-align:center; font-style:italic;">Powered by Machine Learning • Predict Smarter • Buy Better</p>
           </div>
           <div class="card-body">
             <form method="post" accept-charset="utf-8">
@@ -337,11 +468,23 @@
                           <i class="fas fa-map-marker-alt label-icon"></i>
                           Select the location:
                         </label>
-                        <select class="form-control" id="location" name="location" required="1">
+                        <div class="search-select-container">
+                          <input type="text" class="form-control search-input" id="location-search" placeholder="Search and select location..." autocomplete="off">
+                          <div class="dropdown-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                          </div>
+                          <div class="dropdown-list" id="location-dropdown">
+                            {% for location in locations %}
+                                <div class="dropdown-item" data-value="{{ location }}">{{ location }}</div>
+                            {% endfor %}
+                          </div>
+                          <select class="form-control hidden-select" id="location" name="location" required="1" style="display: none;">
+                            <option value="">Select location</option>
                             {% for location in locations %}
                                 <option value="{{ location }}">{{ location }}</option>
                             {% endfor %}
-                        </select>
+                          </select>
+                        </div>
                     </div>
                     <div class="col-md-6 form-group">
                         <label>
@@ -396,10 +539,219 @@
     </div>
 
 <script>
+    // Search functionality for location
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('location-search');
+        const dropdown = document.getElementById('location-dropdown');
+        const hiddenSelect = document.getElementById('location');
+        const dropdownItems = dropdown.querySelectorAll('.dropdown-item');
+        let highlightedIndex = -1;
+
+        // Show dropdown when input is focused or clicked
+        searchInput.addEventListener('focus', function() {
+            dropdown.classList.add('show');
+            filterItems('');
+        });
+
+        searchInput.addEventListener('click', function() {
+            dropdown.classList.add('show');
+            filterItems(this.value);
+        });
+
+        // Filter items as user types
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filterItems(searchTerm);
+            highlightedIndex = -1;
+            dropdown.classList.add('show');
+        });
+
+        // Handle keyboard navigation
+        searchInput.addEventListener('keydown', function(e) {
+            const visibleItems = Array.from(dropdownItems).filter(item => !item.classList.contains('hidden'));
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                highlightedIndex = Math.min(highlightedIndex + 1, visibleItems.length - 1);
+                updateHighlight(visibleItems);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                highlightedIndex = Math.max(highlightedIndex - 1, 0);
+                updateHighlight(visibleItems);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (highlightedIndex >= 0 && visibleItems[highlightedIndex]) {
+                    selectItem(visibleItems[highlightedIndex]);
+                }
+            } else if (e.key === 'Escape') {
+                dropdown.classList.remove('show');
+                highlightedIndex = -1;
+            }
+        });
+
+        // Handle item selection
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', function() {
+                selectItem(this);
+            });
+        });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        function filterItems(searchTerm) {
+            dropdownItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+                item.classList.remove('highlighted');
+            });
+        }
+
+        function updateHighlight(visibleItems) {
+            visibleItems.forEach((item, index) => {
+                if (index === highlightedIndex) {
+                    item.classList.add('highlighted');
+                } else {
+                    item.classList.remove('highlighted');
+                }
+            });
+        }
+
+        function selectItem(item) {
+            const value = item.getAttribute('data-value');
+            searchInput.value = value;
+            searchInput.classList.add('has-selection');
+            hiddenSelect.value = value;
+            dropdown.classList.remove('show');
+            highlightedIndex = -1;
+        }
+    });
+
     function form_handler(event) {
         event.preventDefault();
     }
+    
+    function validateForm() {
+        const location = document.getElementById('location').value;
+        const bhk = document.getElementById('bhk').value.trim();
+        const bath = document.getElementById('bath').value.trim();
+        const sqft = document.getElementById('sqft').value.trim();
+        
+        // Check for empty values
+        if (!location || location === '') {
+            showAlert('Please select a location from the dropdown.', 'error');
+            document.getElementById('location-search').focus();
+            return false;
+        }
+        
+        if (!bhk) {
+            showAlert('Please enter the number of BHK (bedrooms).', 'error');
+            document.getElementById('bhk').focus();
+            return false;
+        }
+        
+        if (!bath) {
+            showAlert('Please enter the number of bathrooms.', 'error');
+            document.getElementById('bath').focus();
+            return false;
+        }
+        
+        if (!sqft) {
+            showAlert('Please enter the square feet area.', 'error');
+            document.getElementById('sqft').focus();
+            return false;
+        }
+        
+        // Validate numeric values
+        if (isNaN(bhk) || parseFloat(bhk) <= 0) {
+            showAlert('BHK must be a valid positive number.', 'error');
+            document.getElementById('bhk').focus();
+            return false;
+        }
+        
+        if (isNaN(bath) || parseFloat(bath) <= 0) {
+            showAlert('Number of bathrooms must be a valid positive number.', 'error');
+            document.getElementById('bath').focus();
+            return false;
+        }
+        
+        if (isNaN(sqft) || parseFloat(sqft) <= 0) {
+            showAlert('Square feet must be a valid positive number.', 'error');
+            document.getElementById('sqft').focus();
+            return false;
+        }
+        
+        // Additional logical validations
+        if (parseFloat(bhk) > 10) {
+            showAlert('BHK seems too high. Please enter a reasonable value (1-10).', 'error');
+            document.getElementById('bhk').focus();
+            return false;
+        }
+        
+        if (parseFloat(bath) > parseFloat(bhk) * 2) {
+            showAlert('Number of bathrooms seems unusually high compared to BHK.', 'error');
+            document.getElementById('bath').focus();
+            return false;
+        }
+        
+        if (parseFloat(sqft) < 100) {
+            showAlert('Square feet seems too small. Please enter a reasonable area.', 'error');
+            document.getElementById('sqft').focus();
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function showAlert(message, type) {
+        // Remove existing alerts
+        const existingAlert = document.querySelector('.custom-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        // Create alert element
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `custom-alert custom-alert-${type}`;
+        alertDiv.innerHTML = `
+            <div class="alert-content">
+                <i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'} alert-icon"></i>
+                <span class="alert-message">${message}</span>
+                <button class="alert-close" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        // Insert alert at the top of the card body
+        const cardBody = document.querySelector('.card-body');
+        cardBody.insertBefore(alertDiv, cardBody.firstChild);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv && alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+        
+        // Scroll to alert
+        alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
     function send_data() {
+        // Validate form before sending
+        if (!validateForm()) {
+            return;
+        }
+        
         document.querySelector('form').addEventListener("submit",form_handler);
         var fd=new FormData(document.querySelector('form'));
         var xhr=new XMLHttpRequest();
@@ -417,14 +769,25 @@
         
         xhr.onreadystatechange=function(){
             if(xhr.readyState==XMLHttpRequest.DONE){
-                // Add success styling
-                const resultDiv = document.querySelector('.prediction-result');
-                resultDiv.classList.add('prediction-success');
-                
-                document.getElementById("prediction-text").innerHTML = xhr.responseText;
+                if (xhr.status === 200) {
+                    // Success - Add success styling
+                    const resultDiv = document.querySelector('.prediction-result');
+                    resultDiv.classList.add('prediction-success');
+                    document.getElementById("prediction-text").innerHTML = xhr.responseText;
+                    showAlert('Price prediction completed successfully!', 'success');
+                } else {
+                    // Error from server
+                    document.getElementById("result-container").style.display = "none";
+                    showAlert('Error occurred while predicting price. Please try again.', 'error');
+                }
             }
         };
-        xhr.onload=function(){};
+        
+        xhr.onerror = function() {
+            document.getElementById("result-container").style.display = "none";
+            showAlert('Network error. Please check your connection and try again.', 'error');
+        };
+        
         xhr.send(fd);
     }
 </script>
